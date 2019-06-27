@@ -113,7 +113,9 @@
 
     .vue-dashboard .row1 .item-bg {
         position: relative;
-        background:linear-gradient(135deg,rgba(48,58,76,1) 0%,rgba(15,19,26,1) 100%);
+        background:linear-gradient(135deg,rgb(146, 190, 247) 20%,rgb(106, 166, 245) 100%);
+        /* background:rgb(255, 255, 255) */
+        /* background:rgb(0, 0, 0) */
     }
 
     .vue-dashboard .item-title {
@@ -485,9 +487,15 @@
         padding: 23px 30px;
     }
 
-    .vue-dashboard .row5 .item-title {
+    .vue-dashboard .row3 .item-title {
         position: absolute;
         margin: 0;
+    }
+
+    .vue-dashboard .row1 .item-title {
+        position: absolute;
+        margin: 0;
+        color: rgb(255,0,0);
     }
 
     .vue-dashboard .row5 .showall {
@@ -666,7 +674,7 @@
 </style>
 <template>
     <div class="vue-dashboard">
-        <div class="bg-black black-header"></div>
+        <div class="black-header"></div>
         <div class="container">
             <!-- ====================1==================== -->
             <div class="row row1">
@@ -885,6 +893,7 @@
 <script>
     var api = require("@/assets/api"),
         utility = require("@/assets/utility"),
+        appConfig = require("@/assets/app-config"),
         BigNumber = require("bignumber.js");
 
     var ECharts = require('vue-echarts/components/ECharts').default;
@@ -933,7 +942,10 @@
                     xAxis: {
                         data: dates,
                         axisLine: {
-                            show: false
+                            show: true,
+                            lineStyle: {
+                                width: 3
+                            }
                         },
                         axisTick: {
                             show: false
@@ -951,7 +963,7 @@
                     yAxis: {
                         // min: 'dataMin',
                         axisLine: {
-                            show: false
+                            show: true
                         },
                         axisLabel: {
                             textStyle: {
@@ -960,16 +972,17 @@
                             margin: 0,
                         },
                         axisTick: {
-                            show: false
+                            show: false,
+                            inside: true,
                         },
                         splitLine: {
-                            show: false
+                            show: true
                         }
                     },
                     series: {
                         type: 'line',
                         data: nums,
-                        smooth: true,
+                        smooth: false,
                         symbol: 'circle',
                         symbolSize: 5,
                         lineStyle: {
@@ -980,19 +993,19 @@
                             color: '#FFFFFF',
                             borderWidth: 3
                         },
-                        areaStyle: {
-                            color: '#595C63',
-                            opacity: 1
-                        }
+                        // areaStyle: {
+                        //     color: '#595C63',
+                        //     opacity: 1
+                        // }
                     },
                     tooltip: {
-                        trigger: 'item',
+                        trigger: 'axis',
                         transitionDuration: 0,
                         position: 'top',
                         formatter: function(params, ticket, callback) {
-                            let date = new Date(params.name);
-                            let dateStr = date.toLocaleDateString('en', { year: 'numeric', month: 'short', day: 'numeric' });
-                            return dateStr + '<div>Transactions: ' + vm.numberAddComma(params.value) + '</div><div class=daily-echart-down-arrow></div>';
+                            let date = new Date(params[0].name);
+                            let dateStr = date.toLocaleDateString(appConfig.language, { year: 'numeric', month: 'short', day: 'numeric' });
+                            return dateStr + '<div>Transactions: ' + vm.numberAddComma(params[0].value) + '</div><div class=daily-echart-down-arrow></div>';
                         },
                         backgroundColor: '#595C63',
                         padding: 8,
@@ -1102,7 +1115,7 @@
                         position: 'top',
                         formatter: function(params, ticket, callback) {
                             let date = new Date(new Number(params.name));
-                            let dateStr = date.toLocaleDateString('en', { year: 'numeric', month: 'short', day: 'numeric' });
+                            let dateStr = date.toLocaleDateString(appConfig.language, { year: 'numeric', month: 'short', day: 'numeric' });
                             return dateStr + '<div>Amount: ' + vm.numberAddComma(params.value) + '</div><div class=account-echart-down-arrow></div>';
                         },
                         backgroundColor: '#0057FF',
@@ -1193,7 +1206,7 @@
                 if (isNaN(date.getMonth())) {
                     return '';
                 }
-                let str = date.toLocaleDateString('en', { month: 'short', day: 'numeric' });
+                let str = date.toLocaleDateString(appConfig.language, { month: 'short', day: 'numeric' });
                 if (str.length > 6) {
                     str = date.getMonth() + 1 + '-' + date.getDate();
                 }

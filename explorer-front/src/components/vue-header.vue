@@ -101,7 +101,7 @@
 
 </style>
 <template>
-    <nav class="bg-black navbar navbar-expand-lg navbar-dark vue-header">
+    <nav class="bg-green navbar navbar-expand-lg navbar-dark vue-header">
         <div class=container>
             <div>
                 <router-link v-bind:to="fragApi + '/'" class=navbar-brand>
@@ -119,7 +119,7 @@
                 </form>
                 <ul class="navbar-nav ml-auto">
                     <li class=nav-item v-bind:class="{ active: $route.meta.headerActive == 1 }">
-                        <router-link v-bind:to="fragApi + '/'" class=nav-link>HOME
+                        <router-link v-bind:to="fragApi + '/'" class=nav-link>{{ $t('nav.home') }}
                             <span class=sr-only>(current)</span>
                         </router-link>
                     </li>
@@ -145,6 +145,17 @@
                             <img src=/static/img/icon_switcher.png width=12 alt="">
                         </a>
                     </li>
+                    <li class="dropdown nav-item" v-bind:class="{ active: $route.meta.headerActive == 2 }">
+                        <a class="nav-link" href=# id=header-dropdown-blockchain role=button data-toggle=dropdown aria-haspopup=true aria-expanded=false>
+                            {{ $t('language') }}
+                            <img src=/static/img/icon_arrow_down.png width=12 alt="">
+                        </a>
+                        <div class=dropdown-menu aria-labelledby=header-dropdown-blockchain>
+                            <a class=dropdown-item href="#" v-on:click.prevent=lanSwitch(0)>{{ language[0] }}</a>
+                            <div class="dropdown-divider"></div>
+                            <a class=dropdown-item href="#" v-on:click.prevent=lanSwitch(1)>{{ language[1] }}</a>
+                        </div>
+                    </li>
                 </ul>
                 
             </div>
@@ -162,7 +173,8 @@
                 fragApi: "",
                 paramsApi: "",
                 search: "",
-                MenuMisc:"MAINNET"
+                MenuMisc:"MAINNET",
+                language: this.$root.language
             };
         },
         methods: {
@@ -173,6 +185,12 @@
                     this.$router.replace("/testnet");
                 }
                 location.reload();
+            },
+            lanSwitch(lanNo) {
+                if (lanNo === 1)
+                    this.$i18n.locale = 'en-US';
+                else
+                    this.$i18n.locale = 'zh-CN';
             },
             onSubmit() {
                 if (this.search.trim().length === 0) {
@@ -214,6 +232,7 @@
         },
         mounted() {
             var paramsApi = this.$route.params.api, apiPrefixes = {}, i, first = true;
+            // console.log(paramsApi)
 
             for (i in appConfig.apiPrefixes)
                 if (first) {
@@ -229,7 +248,6 @@
             this.apiPrefixes = apiPrefixes;
             this.fragApi = paramsApi ? "/" + paramsApi : "";
             this.paramsApi = paramsApi;
-
             if (!!navigator.userAgent.match(/\(i[^;]+;( U;)? CPU.+Mac OS X/)) {
                 // avoid auto zoom under iOS Safari when font size is less than 16px
                 $('.vue-header input').css('font-size', '16px');

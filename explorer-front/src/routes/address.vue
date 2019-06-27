@@ -226,7 +226,7 @@
                    v-bind:subtitlemonospaced="!!$route.params.id"
                    v-bind:blockies="$route.params.id">
         </vue-bread>
-        <div class="container explorer-table-container" v-if=obj>
+        <div v-if=obj class="container explorer-table-container">
             <div class="font-24 font-bold font-color-000000 table-title">
                 Overview
                 <span class=c777 v-show=obj.address.alias> | {{ obj.address.alias }}</span>
@@ -291,7 +291,7 @@
                             </router-link>
                             <img src="../../static/img/icon_arrow_down_black.png" alt="" width="12">
                         </div>
-                        <div v-if="validTokens.length > 1" class="dropdown-menu">
+                        <div class="dropdown-menu">
                             <div class="dropdown-item text-right" v-for="(token, i) in validTokens" :key=i
                             @click='displayToken = token;'>
                                 {{ tokenAmount(token.balance, token.decimal) }} {{ token.tokenName }}
@@ -352,7 +352,7 @@
                             </router-link>
                             <img src="../../static/img/icon_arrow_down_black.png" alt="" width="12">
                         </div>
-                        <div v-if="validTokens.length > 1" class="dropdown-menu">
+                        <div class="dropdown-menu">
                             <div class="dropdown-item text-right" v-for="(token, i) in validTokens" :key=i
                             @click='displayToken = token;'>
                                 {{ tokenAmount(token.balance, token.decimal) }} {{ token.tokenName }}
@@ -365,8 +365,7 @@
             <vue-tab-buttons class=mt50 v-bind:arr=tabButtons v-bind:tab.sync=tab></vue-tab-buttons>
             <div class=mt20></div>
 
-            <!--    Transactions
-                ============================================================ -->
+            <!-- ============================ Transactions ================================ -->
             <div class="tab" v-show="tab == 1">
                 <div v-if="txs.length" class="d-block d-md-flex flex-row align-items-center">
                     <div class="col mr-auto px-0 font-16 font-bold font-color-000000">
@@ -486,8 +485,7 @@
                 </div>
             </div>
 
-            <!--    NRC20 Transactions
-                ============================================================ -->
+            <!-- ============================ NRC20 Transactions ================================ -->
             <div class="tab" v-show="tab === 2 && !isContract">
                 <div v-if="nrc20TxList.length" class="d-block d-md-flex flex-row align-items-center">
                     <div class="col mr-auto px-0 font-16 font-bold font-color-000000">
@@ -584,8 +582,68 @@
             </div>
 
 
-            <!-- code
-             ============================================================ -->
+            <!-- =========================== NAT Changes ================================= -->
+            <div class="tab" v-show="tab === 3 && !isContract">
+                <div class="explorer-table-container">
+                    <table v-if="natChangeList.length" class="mt20 explorer-table list-table">
+                        <tr class="font-12 font-bold font-color-000000" style="height: 46px; background-color: #e8e8e8;">
+                            <th style="width: 100px;"></th>
+                            <th>Value</th>
+                            <th>Age</th>
+                            <th>Block</th>
+                            <th style="width: 25%;">Source</th>
+                        </tr>
+                        <tr v-for="(o, i) in natChangeList" :key="i">
+                            <td class="text-center"><img :src="natIcon(o)" width="30px"/></td>
+                            <td class="amount">{{ tokenAmount(o.amount, 18) }} NAT</td>
+                            <td class="time font-color-555555 font-14">
+                                <div>
+                                    <div>{{ timeConversion(new Date() - o.timestamp) }} ago</div>
+                                    <div class="down-arrow-tip">{{ new Date(o.timestamp).toString().replace('GMT', 'UTC').replace(/\(.+\)/gi, '') }} | {{ o.timestamp }}</div>
+                                </div>
+                            </td>
+                            <td class="txs-block">
+                                <router-link class="font-14"
+                                            v-if=o.block
+                                            v-bind:to='fragApi + "/block/" + o.block'>
+                                    <span>{{ o.block }}</span>
+                                </router-link>
+                                <i class="font-14 font-color-000000" v-else>pending</i>
+                            </td>
+                            <td class="font-14">
+                                <div v-if="o.source === 0">
+                                    <router-link v-bind:to='fragApi + "/tx/" + o.txHash'>
+                                        <span>tx# {{o.txHash.slice(0, 6) + '...' + o.txHash.slice(o.txHash.length - 6)}}</span>
+                                    </router-link>
+                                </div>
+                                <div v-if="o.source === 1">NR Incentive</div>
+                                <div v-if="o.source === 2">Pledge Rewards</div>
+                                <div v-if="o.source === 3">
+                                    <span>NAT Vote</span>
+                                    <router-link v-bind:to='fragApi + "/tx/" + o.txHash' class="ml-2">
+                                        <span>tx# {{o.txHash.slice(0, 6) + '...' + o.txHash.slice(o.txHash.length - 6)}}</span>
+                                    </router-link>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <vue-pagination v-if="natChangeList.length" v-bind:current=currentPage right=1 v-bind:total=totalPage v-on:first=onFirst v-on:last=onLast v-on:next=onNext
+                v-on:prev=onPrev v-on:to=onTo></vue-pagination>
+
+                <div v-if=isNoNatChanges
+                     style="left: 0;right:0;text-align:center; padding-top: 76px; padding-bottom: 80px;">
+                    <img style="width: 131px; height: 142px;" src="/static/img/no_content.png?v=20190117"/>
+                    <br/>
+                    <div style="margin-top: 12px;">
+                        <span class="text-no-content">No Content</span>
+                    </div>
+                </div>
+            </div>
+
+
+            <!-- ============================== code ============================== -->
             <div class=tab v-show="tab == 2 && isContract">
                 <table class="mt20 table">
                     <tr>
@@ -625,18 +683,35 @@
                 return "0x0";
             },
             tabButtons() {
-                var buttons = ["Transactions", "NRC20 Token Txns"];
+                var buttons = ["Transactions", "NRC20 Token Txns", "NAT"];
+                if (this.$route.params.api === 'testnet') {
+                    buttons = ["Transactions", "NRC20 Token Txns"];
+                }
                 if (this.isContract) {
                     buttons = ["Transactions", "Contract Code"];
                 }
                 return buttons;
             },
             urlChange() {
+                this.obj = null;
                 this.tab = 1;
-                this.contract = null;
+                this.txs = [];
+                this.tokens = null;
+                this.displayToken = null;
+                this.decimal = null;
                 this.isContract = false;
+                this.contract = null;
+                this.creator = null;
+                this.deployTxHash = null;
+                this.contractCode = null;
                 this.nrc20TxList = [];
                 this.nrc20TxCnt = 0;
+                this.isNoNrc20Tx = false;
+                this.natChangeList = [];
+                this.isNoNatChanges = false;
+                this.totalPage = 0;
+                this.currentPage = 0;
+
                 this.$root.showModalLoading = true;
                 api.getAddress(this.$route.params.id, o => {
                     this.$root.showModalLoading = false;
@@ -679,7 +754,7 @@
                 return this.isContract ? "Contract" : "Address";
             },
             validTokens() {
-                let tokens = [...this.tokens];
+                let tokens = this.tokens.filter(item => {return item.balance !== 0 || item.tokenName === 'NAT'});
                 return tokens.sort((a, b) => {
                     if (a.tokenName === 'NAT' || b.tokenName === 'NAT') {
                         return a.tokenName === 'NAT' ? -1 : 1;
@@ -707,7 +782,11 @@
                 contractCode: null,
                 nrc20TxList: [],
                 nrc20TxCnt: 0,
-                isNoNrc20Tx: false
+                isNoNrc20Tx: false,
+                natChangeList: [],
+                isNoNatChanges: false,
+                totalPage: 0,
+                currentPage: 0
             };
         },
         methods: {
@@ -774,7 +853,7 @@
             tokenAmount(n, decimals) {
                 decimals = decimals || 18;
                 BigNumber.config({ DECIMAL_PLACES: decimals })
-                var amount = BigNumber(n);
+                var amount = BigNumber(n).abs();
                 var decimals = BigNumber('1e+' + decimals);
                 return amount.div(decimals).toFormat().shortAmount();
             },
@@ -797,12 +876,50 @@
                 BigNumber.config({ DECIMAL_PLACES: 18 })
                 var amount = BigNumber(JSON.parse(JSON.parse(tx.data).Args)[3]);
                 var decimals = BigNumber('1e+18');
-                return amount.div(decimals).toFormat();
+                return amount.div(decimals).toFormat().shortAmount();
+            },
+            natIcon(data) {
+                if (data.amount.startsWith('-')) {
+                    return "/static/img/icon_nat_out.png";
+                }
+                return "/static/img/icon_nat_in.png";
+            },
+            nav(n) {
+                this.$root.showModalLoading = true;
+
+                api.getNatChanges(this.$route.params.id, n || 1, 25, o => {
+                    this.$root.showModalLoading = false;
+                    this.natChangeList = o.list || [];
+                    this.isNoNatChanges = this.natChangeList.length === 0;
+                    this.totalPage = o.totalPage;
+                    this.currentPage = o.currentPage;
+                }, xhr => {
+                    this.$root.showModalLoading = false;
+                    this.$router.replace((this.$route.params.api ? "/" + this.$route.params.api : "") + "/404");
+                });
+            },
+            numberAddComma(n) {
+                return utility.numberAddComma(n);
+            },
+            onFirst() {
+                this.nav(1);
+            },
+            onLast() {
+                this.nav(this.totalPage);
+            },
+            onNext() {
+                this.nav(this.currentPage + 1);
+            },
+            onPrev() {
+                this.nav(this.currentPage - 1);
+            },
+            onTo(n) {
+                this.nav(n);
             },
         },
         watch: {
-            tab: function (newTab, oldTaB) {
-                if (!this.isContract && newTab == 2 && this.nrc20TxList.length == 0) {
+            tab: function (newTab, oldTab) {
+                if (!this.isContract && newTab == 2 && this.nrc20TxList.length === 0) {
                     this.$root.showModalLoading = true;
                     api.getNrc20Txs(this.$route.params.id, 1, o => {
                         this.$root.showModalLoading = false;
@@ -812,6 +929,8 @@
                     }, xhr => {
                         this.$root.showModalLoading = false;
                     });
+                } else if (!this.isContract && newTab == 3 && this.natChangeList.length === 0) {
+                    this.nav(1);
                 }
             }
         }

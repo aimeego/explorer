@@ -25,6 +25,10 @@ ul {
     background-color: black;
 }
 
+.bg-green {
+    background-color: rgba(28, 223, 54, 0.8)
+}
+
 .text-black {
     color: black;
 }
@@ -179,7 +183,8 @@ label {
 }
 
 .navbar-dark .navbar-nav .nav-link {
-    color: rgba(255, 255, 255, 1);
+    color: rgb(0, 0, 0);
+    font-weight: bolder;
 }
 
 @media (min-width: 992px) {

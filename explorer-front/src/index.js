@@ -5,6 +5,15 @@ var Vue = require("vue").default,
     vRouter = new VueRouter({ routes: require("@/assets/routes") }),
     gaPage = require('vue-analytics').page;
 
+import VueI18n from 'vue-i18n'
+Vue.use(VueI18n)
+const i18n = new VueI18n({
+    locale: 'zh-CN',    // change this.$i18n.locale to change language
+    messages: {
+      'zh-CN': require('@/assets/locals/zh-CN.js'),
+      'en-US': require('@/assets/locals/en.js')
+    }
+})
 // Expose jQuery to the global object
 const jQuery = require('jquery');
 window.jQuery = window.$ = jQuery;
@@ -91,14 +100,16 @@ vApp = new Vue({
     data: {
         timestamp: Date.now(),
         showModalLoading: false,
-        showAtpAds: true,
-        mainnetDipStarted: true,
-        mainnetGotDipWinners: true,
-        testnetDipStarted: true,
-        testnetGotDipWinners: true
+        showAtpAds: false,
+        mainnetDipStarted: false,
+        mainnetGotDipWinners: false,
+        testnetDipStarted: false,
+        testnetGotDipWinners: false,
+        language:['中文','EN']
     },
     el: ".vue",
-    router: vRouter
+    router: vRouter,
+    i18n
 });
 
 setInterval(() => {

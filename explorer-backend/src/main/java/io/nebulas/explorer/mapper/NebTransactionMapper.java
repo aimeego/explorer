@@ -4,7 +4,9 @@ import io.nebulas.explorer.domain.BlockSummary;
 import io.nebulas.explorer.domain.NebTransaction;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+import org.joda.time.DateTime;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -26,6 +28,12 @@ public interface NebTransactionMapper {
 
     long countTxnCntByFromTo(String addressHash);
 
+    long countTxnByFrom(String addressHash);
+
+    long countTxnByTo(String addressHash);
+
+    long countTxnByFromAndTo(String addressHash);
+
     long countContractTransfer(String contract);
 
     long countTxnCntByFromAndTo(@Param("from") String from, @Param("to") String to);
@@ -36,9 +44,13 @@ public interface NebTransactionMapper {
 
     long countNrc20TxnCntByFromAndTo(String addressHash);
 
+    int countTxByDay(@Param("dayStart") String dayStart, @Param("dayEnd") String dayEnd);
+
     NebTransaction getByHash(String hash);
 
     NebTransaction getByContractAddress(String contractAddress);
+
+    NebTransaction getDeployTransactionByContractAddress(String contractAddress);
 
     List<NebTransaction> findTxnByBlockHeight(Long blockHeight);
 
@@ -47,6 +59,8 @@ public interface NebTransactionMapper {
     List<NebTransaction> findContractTransactions(@Param("contract") String contract, @Param("offset") int offset, @Param("limit") int limit);
 
     List<NebTransaction> findTxnByFromTo(@Param("addressHash") String addressHash, @Param("offset") int offset, @Param("limit") int limit);
+
+    List<NebTransaction> find500TxListByAddress(@Param("address") String address);
 
     List<NebTransaction> findTxnOrderById(@Param("offset") int offset, @Param("limit") int limit);
 
@@ -61,6 +75,4 @@ public interface NebTransactionMapper {
     List<Map<String, String>> countTxnCntMapByFrom(List<String> addressHashes);
 
     List<Map<String, String>> countTxnCntMapByTo(List<String> addressHashes);
-
-    List<Map<String, Object>> countTxCntGroupByTimestamp(@Param("from") String from, @Param("to") String to);
 }

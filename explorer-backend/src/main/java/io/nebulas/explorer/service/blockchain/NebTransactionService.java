@@ -5,6 +5,7 @@ import com.alibaba.fastjson.JSONObject;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+
 import io.nebulas.explorer.domain.*;
 import io.nebulas.explorer.enums.NebTokenEnum;
 import io.nebulas.explorer.mapper.NebContractTokenMapper;
@@ -14,14 +15,17 @@ import io.nebulas.explorer.model.vo.Nrc20TransactionVo;
 import io.nebulas.explorer.model.vo.TransactionVo;
 import io.nebulas.explorer.util.DecodeUtil;
 import lombok.AllArgsConstructor;
+
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
 import org.joda.time.LocalDate;
 import org.joda.time.LocalDateTime;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -38,7 +42,6 @@ public class NebTransactionService {
     private final NebTransactionMapper nebTransactionMapper;
     private final NebPendingTransactionMapper nebPendingTransactionMapper;
     private final NebContractTokenMapper nebContractTokenMapper;
-
 
 
     private static final Base64.Decoder DECODER = Base64.getDecoder();
@@ -122,6 +125,27 @@ public class NebTransactionService {
         return nebTransactionMapper.countTxnCntByFromTo(addressHash);
     }
 
+    public long countTxByFrom(String address) {
+        if (StringUtils.isEmpty(address)) {
+            return 0L;
+        }
+        return nebTransactionMapper.countTxnByFrom(address);
+    }
+
+    public long countTxByTo(String address) {
+        if (StringUtils.isEmpty(address)) {
+            return 0L;
+        }
+        return nebTransactionMapper.countTxnByTo(address);
+    }
+
+    public long countTxByFromAndTo(String address) {
+        if (StringUtils.isEmpty(address)) {
+            return 0L;
+        }
+        return nebTransactionMapper.countTxnByFromAndTo(address);
+    }
+
     /**
      * according address hash to query pending transaction total count
      *
@@ -143,7 +167,7 @@ public class NebTransactionService {
         return nebTransactionMapper.countTxnCntByBlockHeight(blockHeight);
     }
 
-    public long countTotalTxnCnt(){
+    public long countTotalTxnCnt() {
         return nebTransactionMapper.countTotalTxnCnt();
     }
 
@@ -170,14 +194,14 @@ public class NebTransactionService {
 
         //只允许官方支持的nrc20代币可以用来展示,所以查询出来的交易也只有nrc20的
         List<NebContractToken> contractToken = nebContractTokenMapper.getAllContractTokens();
-        Map<String, Long> contractMap = contractToken.stream().collect(Collectors.toMap(NebContractToken::getContract,NebContractToken::getTokenDecimals));
+        Map<String, Long> contractMap = contractToken.stream().collect(Collectors.toMap(NebContractToken::getContract, NebContractToken::getTokenDecimals));
 
         //搜索所有nrc20转账记录，然后提取属于自己地址的
         List<NebTransaction> contractTxList = new ArrayList<>();
         contractToken.forEach(nebContractToken -> {
 
             List<NebTransaction> contractList = nebTransactionMapper.findTxnByContract(nebContractToken.getContract());
-            if (contractList == null || contractList.size() == 0){
+            if (contractList == null || contractList.size() == 0) {
                 contractList = Collections.emptyList();
             }
             contractTxList.addAll(nebTransactionMapper.findTxnByContract(nebContractToken.getContract()));
@@ -187,7 +211,7 @@ public class NebTransactionService {
         //过滤掉非nrc20的数据,并且提取对应的data,提取属于自己地址的交易
         contractTxList.forEach(nebTransaction -> {
             JSONObject data = DecodeUtil.decodeData(nebTransaction.getData());
-            if (DecodeUtil.isContractTransfer(data)){
+            if (DecodeUtil.isContractTransfer(data)) {
                 //将to的合约地址放到对应的contractAddress字段里
                 nebTransaction.setContractAddress(nebTransaction.getTo());
                 JSONArray args = data.getJSONArray("Args");
@@ -197,7 +221,7 @@ public class NebTransactionService {
                 nebTransaction.setTo(to);
                 nebTransaction.setValue(value);
 
-                if(nebTransaction.getFrom().equals(addressHash) || nebTransaction.getTo().equals(addressHash)){
+                if (nebTransaction.getFrom().equals(addressHash) || nebTransaction.getTo().equals(addressHash)) {
                     Nrc20TransactionVo nrc20TransactionVo = new Nrc20TransactionVo();
                     nrc20TransactionVo.buildFromNebTransaction(nebTransaction);
                     nrc20TransactionVo.setTokenDecimals(contractMap.get(nrc20TransactionVo.getContractAddress()));
@@ -206,7 +230,7 @@ public class NebTransactionService {
             }
         });
 
-        Collections.sort(nrc20TxList,Comparator.comparing(Nrc20TransactionVo::getTimestamp).reversed());
+        Collections.sort(nrc20TxList, Comparator.comparing(Nrc20TransactionVo::getTimestamp).reversed());
 
         return nrc20TxList;
     }
@@ -237,6 +261,19 @@ public class NebTransactionService {
             return null;
         }
         return nebTransactionMapper.getByContractAddress(contractAddress);
+    }
+
+    /**
+     * 根据合约地址获取部署该合约的交易
+     *
+     * @param contractAddress contractAddress hash
+     * @return transaction information
+     */
+    public NebTransaction getDeployTransactionByContractAddress(String contractAddress) {
+        if (StringUtils.isEmpty(contractAddress)) {
+            return null;
+        }
+        return nebTransactionMapper.getDeployTransactionByContractAddress(contractAddress);
     }
 
     /**
@@ -277,6 +314,11 @@ public class NebTransactionService {
      */
     public List<NebTransaction> findTxnByCondition(Long blockHeight, String addressHash, int page, int pageSize) {
         return nebTransactionMapper.findTxnByCondition(blockHeight, addressHash, (page - 1) * pageSize, pageSize);
+    }
+
+    public List<NebTransaction> findTxsByAddress(String address, int page, int pageSize) {
+        List<NebTransaction> last500tx = nebTransactionMapper.find500TxListByAddress(address);
+        return getPagination(last500tx, page, pageSize);
     }
 
     /**
@@ -335,42 +377,13 @@ public class NebTransactionService {
         return nebTransactionMapper.findTxnOrderById((page - 1) * pageSize, pageSize);
     }
 
-    /**
-     * calculate transaction count between date
-     *
-     * @param from begin date
-     * @param to   end date
-     * @return transaction count map
-     */
-    public Map<String, Long> countTxCntGroupMapByTimestamp(Date from, Date to) {
-        List<Map<String, Object>> txCntResultList = nebTransactionMapper.countTxCntGroupByTimestamp(parseDate2Str(from), parseDate2Str(to));
-        Map<String, Long> txCntMap = txCntResultList.stream()
-                .collect(Collectors.toMap(k -> k.get("ts").toString(), v -> Long.valueOf(v.get("cnt").toString())));
-
-        Map<String, Long> resultMap = Maps.newLinkedHashMap();
-        LocalDate fromLocalDate = LocalDate.fromDateFields(from);
-        LocalDate toLocalDate = LocalDate.fromDateFields(to);
-        while (fromLocalDate.isBefore(toLocalDate)) {
-            String dateStr = fromLocalDate.toString("yyyy-MM-dd");
-            Long cnt = txCntMap.get(dateStr);
-            resultMap.put(dateStr, (null != cnt ? cnt : 0));
-            fromLocalDate = fromLocalDate.plusDays(1);
-        }
-        return resultMap;
+    public int countTxCountByDate(Date day) {
+        DateTime dateTime = new DateTime(day.getTime());
+        DateTime dayStart = dateTime.withTimeAtStartOfDay();
+        DateTime dayEnd = dayStart.plusDays(1).minusSeconds(1);
+        int count = nebTransactionMapper.countTxByDay(dayStart.toString("yyyyMMddHHmmss"), dayEnd.toString("yyyyMMddHHmmss"));
+        return count;
     }
-
-    public long countTxToday(){
-
-        List<Map<String, Object>> txCntResultList = nebTransactionMapper.countTxCntGroupByTimestamp(LocalDate.now(DateTimeZone.UTC).toDateTimeAtStartOfDay().toString(), LocalDateTime.now(DateTimeZone.UTC).toString());
-        if (txCntResultList.size() == 0){
-            return 0;
-        }
-        long todayTxCount = (long)txCntResultList.get(0).get("cnt");
-        return todayTxCount;
-    }
-
-
-
 
     /**
      * According to block height calculate transaction information
@@ -446,8 +459,25 @@ public class NebTransactionService {
 
     }
 
-    private String parseDate2Str(Date date) {
-        return LocalDate.fromDateFields(date).toString("yyyy-MM-dd");
+    private List<NebTransaction> getPagination(List<NebTransaction> source, int page, int pageSize) {
+        if (page <= 0) {
+            page = 1;
+        }
+        int realSize = pageSize;
+        int start = (page - 1) * pageSize;
+        if (start >= source.size()) {
+            return Collections.emptyList();
+        }
+        if (start + realSize > source.size()) {
+            realSize = source.size() - start;
+        }
+        List<NebTransaction> result;
+        try {
+            result = source.subList(start, start + realSize);
+        } catch (Exception e) {
+            result = Collections.emptyList();
+        }
+        return result;
     }
 
 }

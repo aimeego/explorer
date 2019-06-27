@@ -1,16 +1,8 @@
 package io.nebulas.explorer.service.blockchain;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
-
-import io.nebulas.explorer.domain.*;
-import io.nebulas.explorer.enums.NebAddressTypeEnum;
-import io.nebulas.explorer.enums.NebTransactionTypeEnum;
-import io.nebulas.explorer.grpc.GrpcChannelService;
-import io.nebulas.explorer.service.thirdpart.nebulas.NebApiServiceWrapper;
-import io.nebulas.explorer.service.thirdpart.nebulas.bean.Block;
-import io.nebulas.explorer.service.thirdpart.nebulas.bean.Transaction;
-import lombok.extern.slf4j.Slf4j;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -21,6 +13,25 @@ import java.util.Arrays;
 import java.util.Base64;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+
+import io.nebulas.explorer.domain.NebAddress;
+import io.nebulas.explorer.domain.NebBlock;
+import io.nebulas.explorer.domain.NebContractTokenBalance;
+import io.nebulas.explorer.domain.NebPendingTransaction;
+import io.nebulas.explorer.domain.NebTransaction;
+import io.nebulas.explorer.enums.NebAddressTypeEnum;
+import io.nebulas.explorer.enums.NebTransactionTypeEnum;
+import io.nebulas.explorer.grpc.GrpcChannelService;
+import io.nebulas.explorer.service.NatSyncService;
+import io.nebulas.explorer.service.redis.RedisService;
+import io.nebulas.explorer.service.thirdpart.nebulas.NebApiServiceWrapper;
+import io.nebulas.explorer.service.thirdpart.nebulas.bean.Block;
+import io.nebulas.explorer.service.thirdpart.nebulas.bean.Event;
+import io.nebulas.explorer.service.thirdpart.nebulas.bean.GetEventsByHashResponse;
+import io.nebulas.explorer.service.thirdpart.nebulas.bean.Transaction;
+import lombok.extern.slf4j.Slf4j;
 
 /**
  * Desc:
@@ -47,33 +58,14 @@ public class NebSyncService {
     private ContractTokenBalanceService contractTokenBalanceService;
     @Autowired
     private ContractTokenService contractTokenService;
+    @Autowired
+    private RedisService redisService;
+    @Autowired
+    private NebDipAwardService nebDipAwardService;
+    @Autowired
+    private NatSyncService natSyncService;
 
     private static final Base64.Decoder DECODER = Base64.getDecoder();
-
-
-    public void testSyncContractTransactions(String hash){
-        try {
-            Block block = nebApiServiceWrapper.getBlockByHash(hash, true);
-            if (block == null) {
-                log.error("block with hash {} not found", hash);
-                return;
-            }
-            log.info("get block by hash {}", block.getHash());
-            List<Transaction> txs = block.getTransactions();
-            for (Transaction tx: txs) {
-                NebTransactionTypeEnum typeEnum = NebTransactionTypeEnum.parse(tx.getType());
-                if (NebTransactionTypeEnum.CALL.equals(typeEnum)) {
-                    log.info("开始处理合约调用交易: " + tx.getHash());
-                    JSONObject data = decodeData(tx.getData());
-                    processContractBalanceInfo(tx, data);
-                }
-            }
-        } catch (Exception e) {
-            log.error("no block yet", e);
-        }
-    }
-
-
 
     public void syncBlockByHash(String hash, boolean isLib) {
         try {
@@ -107,6 +99,11 @@ public class NebSyncService {
         if (null == block) {
             return;
         }
+        log.info("start to sync block: height({}), hash({})", block.getHeight(), block.getHash());
+        if (!isLib) {
+            //交易数量累加到redis - tx_today_yyyy-MM-dd
+            redisService.plusCount(block);
+        }
 
         syncAddresses(Arrays.asList(block.getMiner(), block.getCoinbase()));
 
@@ -124,13 +121,16 @@ public class NebSyncService {
             log.info("replace block, height={}, blockTimestamp={}, timestamp={}, date={}", newBlock.getHeight(), block.getTimestamp(), newBlock.getTimestamp().getTime(), newBlock.getTimestamp());
         } else {
             nebBlockService.addNebBlock(newBlock);
-            log.info("add block(nebSyncService), blockTimestamp={}, height={}, timestamp={}, date={}", newBlock.getHeight(), block.getTimestamp(), newBlock.getTimestamp().getTime(), newBlock.getTimestamp());
+            log.info("add block(nebSyncService), height={}, blockTimestamp={}, timestamp={}, date={}", newBlock.getHeight(), block.getTimestamp(), newBlock.getTimestamp().getTime(), newBlock.getTimestamp());
         }
 
         //sync transaction
         List<Transaction> txs = block.getTransactions();
         if (isLib) {
             nebTransactionService.deleteNebTransactionByBlkHeight(block.getHeight());
+        }
+        if (!isLib) {
+            natSyncService.sync(block.getHeight(), txs);
         }
         int i = 0;
         for (Transaction tx : txs) {
@@ -151,6 +151,9 @@ public class NebSyncService {
         //sync address
         log.info("开始同步交易: " + tx.getHash());
         syncAddress(tx.getFrom(), NebAddressTypeEnum.NORMAL);
+
+        //处理DIP交易
+        nebDipAwardService.parseDipTransaction(tx, block);
 
         NebTransactionTypeEnum typeEnum = NebTransactionTypeEnum.parse(tx.getType());
 
@@ -175,7 +178,8 @@ public class NebSyncService {
 //            }
 
         } else if (NebTransactionTypeEnum.DEPLOY.equals(typeEnum)) {
-            syncAddress(tx.getContractAddress(), NebAddressTypeEnum.CONTRACT);
+            log.info("交易类型为deploy, 准备插入智能合约地址: {}, creator: {}, deployTxHash: {}", tx.getContractAddress(), tx.getFrom(), tx.getHash());
+            createContractAddress(tx.getContractAddress(), tx.getFrom(), tx.getHash());
         }
 
         NebPendingTransaction nebPendingTransaction = nebTransactionService.getNebPendingTransactionByHash(tx.getHash());
@@ -241,7 +245,8 @@ public class NebSyncService {
 //                    }
 
                 } else if (NebTransactionTypeEnum.DEPLOY.equals(typeEnum)) {
-                    syncAddress(txSource.getContractAddress(), NebAddressTypeEnum.CONTRACT);
+                    //pending的交易理论上不需要处理deploy的合约地址，在上链之后再处理，参见#syncTx方法
+//                    syncAddress(txSource.getContractAddress(), NebAddressTypeEnum.CONTRACT);
                 }
 
                 log.info("get pending tx by hash {}", hash);
@@ -276,17 +281,29 @@ public class NebSyncService {
         nebTransactionService.deleteNebPendingTransaction(hash);
     }
 
+    private void createContractAddress(String contractAddress, String creator, String deployTxHash) {
+        NebAddress address = nebAddressService.getNebAddressByHashRpc(contractAddress);
+        if (address==null){
+            log.info("未查到智能合约地址(not found on chain / network error): {}", contractAddress);
+            return;
+        }
+        address.setCreator(creator);
+        address.setDeployTxHash(deployTxHash);
+        nebAddressService.addNebContract(address);
+        log.info("智能合约地址保存成功: {}", JSON.toJSONString(address));
+    }
+
     private void syncAddress(String hash, NebAddressTypeEnum type) {
         if (StringUtils.isEmpty(hash)) {
             return;
         }
         try {
-            NebAddress addr = nebAddressService.getNebAddressByHash(hash);
-            if (addr == null) {
-                addr = nebAddressService.getNebAddressByHashRpc(hash);
-                if (null != addr) {
-                    nebAddressService.addNebAddress(addr);
-                }
+            NebAddress address = nebAddressService.getNebAddressByHash(hash);
+            NebAddress addressFromRPC = nebAddressService.getNebAddressByHashRpc(hash);
+            if (address == null) {
+                nebAddressService.addNebAddress(addressFromRPC);
+            } else {
+                nebAddressService.updateAddressBalance(hash, addressFromRPC.getBalance(), addressFromRPC.getNonce());
             }
         } catch (Throwable e) {
             log.error("add address error", e);
@@ -387,5 +404,7 @@ public class NebSyncService {
         }
         return new JSONObject();
     }
+
+
 
 }

@@ -7,6 +7,7 @@ import io.nebulas.explorer.model.vo.AddrTypeVo;
 import io.nebulas.explorer.service.thirdpart.nebulas.NebApiServiceWrapper;
 import io.nebulas.explorer.service.thirdpart.nebulas.bean.GetAccountStateResponse;
 import lombok.AllArgsConstructor;
+
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -33,6 +34,9 @@ public class NebAddressService {
     private final NebAddressMapper nebAddressMapper;
     private final NebApiServiceWrapper nebApiServiceWrapper;
 
+    private final static int ADDRESS_TYPE_NORMAL = 0;
+    private final static int ADDRESS_TYPE_CONTRACT = 1;
+
 //    /**
 //     * save address information
 //     *
@@ -44,6 +48,14 @@ public class NebAddressService {
 //        return nebAddressMapper.add(hash, type) > 0;
 //    }
 
+    public List<NebAddress> getContractList(int pageNum, int pageSize) {
+        return nebAddressMapper.getAddressListByType(ADDRESS_TYPE_CONTRACT, (pageNum - 1) * pageSize, pageSize);
+    }
+
+    public long getTotalContractCount(){
+        return nebAddressMapper.getAddressCountByType(ADDRESS_TYPE_CONTRACT);
+    }
+
     /**
      * save address information
      *
@@ -52,6 +64,24 @@ public class NebAddressService {
      */
     public boolean addNebAddress(NebAddress address) {
         return nebAddressMapper.addAddress(address.getHash(), address.getNonce(), address.getType(), address.getCurrentBalance()) > 0;
+    }
+
+    public void addNebContract(NebAddress contractAddress) {
+        nebAddressMapper.addContract(
+                contractAddress.getHash(),
+                contractAddress.getNonce(),
+                contractAddress.getCurrentBalance(),
+                contractAddress.getCreator(),
+                contractAddress.getDeployTxHash()
+        );
+    }
+
+    public void updateNebContractCreator(NebAddress contractAddress) {
+        nebAddressMapper.updateContractCreator(
+                contractAddress.getHash(),
+                contractAddress.getCreator(),
+                contractAddress.getDeployTxHash()
+        );
     }
 
     /**
@@ -76,6 +106,15 @@ public class NebAddressService {
      */
     public long countTotalAddressCnt() {
         return nebAddressMapper.countTotalAddressCnt();
+    }
+
+    /**
+     * Query contract address number
+     *
+     * @return the number of contract address
+     */
+    public long countTotalContractAddrCnt() {
+        return nebAddressMapper.countTotalContractAddrCnt();
     }
 
     public Map<NebAddressTypeEnum, Long> countAccountGroupByType() {

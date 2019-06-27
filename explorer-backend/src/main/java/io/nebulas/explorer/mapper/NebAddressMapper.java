@@ -2,6 +2,7 @@ package io.nebulas.explorer.mapper;
 
 import io.nebulas.explorer.domain.NebAddress;
 import io.nebulas.explorer.model.vo.AddrTypeVo;
+
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -22,9 +23,21 @@ public interface NebAddressMapper {
 
     Integer addAddress(@Param("hash") String hash, @Param("nonce") String nonce, @Param("type") Integer type, @Param("balance") BigDecimal balance);
 
+    Integer addContract(@Param("hash") String hash,
+                        @Param("nonce") String nonce,
+                        @Param("balance") BigDecimal balance,
+                        @Param("creator") String creator,
+                        @Param("deployTxHash") String deployTxHash);
+
+    Integer updateContractCreator(@Param("hash") String hash,
+                        @Param("creator") String creator,
+                        @Param("deployTxHash") String deployTxHash);
+
     Integer update(@Param("hash") String hash, @Param("balance") BigDecimal balance, @Param("nonce") String nonce);
 
     long countTotalAddressCnt();
+
+    long countTotalContractAddrCnt();
 
     NebAddress getByHash(String hash);
 
@@ -33,4 +46,8 @@ public interface NebAddressMapper {
     List<NebAddress> findAddressMapByAddressHash(List<String> addressHashes);
 
     List<AddrTypeVo> countAccountGroupByType();
+
+    List<NebAddress> getAddressListByType(@Param("type") int type, @Param("offset") int offset, @Param("limit") int limit);
+
+    long getAddressCountByType(@Param("type") int type);
 }

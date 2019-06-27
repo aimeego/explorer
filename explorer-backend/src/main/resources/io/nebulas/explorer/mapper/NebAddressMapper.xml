@@ -10,9 +10,11 @@
         <result column="current_balance" property="currentBalance" jdbcType="DECIMAL"/>
         <result column="created_at" property="createdAt" jdbcType="TIMESTAMP"/>
         <result column="updated_at" property="updatedAt" jdbcType="TIMESTAMP"/>
+        <result column="creator" property="creator" jdbcType="VARCHAR"/>
+        <result column="deploy_tx_hash" property="deployTxHash" jdbcType="VARCHAR"/>
     </resultMap>
     <sql id="Base_Column_List">
-        `id`, `hash`,`nonce`, `type`, `alias`,`current_balance`, `created_at`, `updated_at`
+        `id`, `hash`,`nonce`, `type`, `alias`,`current_balance`, `created_at`, `updated_at`, `creator`, `deploy_tx_hash`
     </sql>
 
     <!--<insert id="add" parameterType="map" useGeneratedKeys="false">-->
@@ -21,6 +23,17 @@
 
     <insert id="addAddress" parameterType="map" useGeneratedKeys="false">
         INSERT ignore INTO `neb_address` (`hash`,`nonce`, `type`, `current_balance`) VALUES (#{hash}, #{nonce}, #{type}, #{balance})
+    </insert>
+
+    <insert id="addContract" parameterType="map" useGeneratedKeys="false">
+        INSERT ignore INTO `neb_address` (`hash`,`nonce`, `type`, `current_balance`, `creator`, `deploy_tx_hash`)
+        VALUES (#{hash}, #{nonce}, 1, #{balance}, #{creator}, #{deployTxHash})
+    </insert>
+
+    <insert id="updateContractCreator" parameterType="map" useGeneratedKeys="false">
+        update `neb_address`
+        set `creator`=#{creator}, `deploy_tx_hash`=#{deployTxHash}
+        where `hash` = #{hash,jdbcType=VARCHAR}
     </insert>
 
     <update id="update" parameterType="map">
@@ -32,6 +45,12 @@
     <select id="countTotalAddressCnt" resultType="java.lang.Long">
         SELECT count(1)
         FROM `neb_address`
+    </select>
+
+    <select id="countTotalContractAddrCnt" resultType="java.lang.Long">
+        SELECT count(1)
+        FROM `neb_address`
+        WHERE type='1'
     </select>
 
     <select id="countAccountGroupByType" resultType="io.nebulas.explorer.model.vo.AddrTypeVo">
@@ -61,6 +80,22 @@
         FROM `neb_address`
         WHERE `hash` in
         <foreach collection="list" item="item" open="(" close=")" separator=",">#{item,jdbcType=VARCHAR}</foreach>
+    </select>
+
+    <select id="getAddressListByType" resultMap="BaseResultMap" parameterType="map">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM `neb_address`
+        WHERE `type`=${type}
+        ORDER BY `created_at` DESC
+        LIMIT ${offset},${limit}
+    </select>
+
+    <select id="getAddressCountByType" resultType="java.lang.Long" parameterType="map">
+        SELECT
+        count(*)
+        FROM `neb_address`
+        WHERE `type`=${type}
     </select>
 
 

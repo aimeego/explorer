@@ -79,10 +79,34 @@
         WHERE `from` = #{addressHash,jdbcType=VARCHAR} or `to` = #{addressHash,jdbcType=VARCHAR}
     </select>
 
+    <select id="countTxnByFrom" parameterType="java.lang.String" resultType="java.lang.Long">
+        SELECT count(1)
+        FROM `neb_transaction`
+        WHERE `from` = #{addressHash,jdbcType=VARCHAR}
+    </select>
+
+    <select id="countTxnByTo" parameterType="java.lang.String" resultType="java.lang.Long">
+        SELECT count(1)
+        FROM `neb_transaction`
+        WHERE `to` = #{addressHash,jdbcType=VARCHAR}
+    </select>
+
+    <select id="countTxnByFromAndTo" parameterType="java.lang.String" resultType="java.lang.Long">
+        SELECT count(1)
+        FROM `neb_transaction`
+        WHERE `from` = #{addressHash,jdbcType=VARCHAR} and `to` = #{addressHash,jdbcType=VARCHAR}
+    </select>
+
     <select id="countNrc20TxnCntByFromAndTo" parameterType="java.lang.String" resultType="java.lang.Long">
         SELECT count(1)
         FROM `neb_transaction`
         WHERE `from` = #{addressHash,jdbcType=VARCHAR} or `to` = #{addressHash,jdbcType=VARCHAR} AND type = 'call'
+    </select>
+
+    <select id="countTxByDay" parameterType="map" resultType="java.lang.Integer">
+        SELECT count(*)
+        FROM `neb_transaction`
+        WHERE `timestamp` between #{dayStart,jdbcType=TIMESTAMP} and #{dayEnd,jdbcType=TIMESTAMP}
     </select>
 
     <select id="countTxnCntByFromAndTo" parameterType="map" resultType="java.lang.Long">
@@ -112,6 +136,15 @@
         LIMIT 1
     </select>
 
+    <select id="getDeployTransactionByContractAddress" resultType="NebTransaction" parameterType="java.lang.String">
+        SELECT
+        <include refid="Base_Column_List"/>
+        FROM `neb_transaction`
+        WHERE `contract_address` = #{contractAddress,jdbcType=VARCHAR}
+        AND `type`='deploy'
+        LIMIT 1
+    </select>
+
     <select id="findTxnByBlockHeight" parameterType="java.lang.Long" resultMap="BaseResultMap">
         SELECT
         <include refid="Base_Column_List"/>
@@ -126,6 +159,9 @@
         FROM `neb_transaction`
         <where>
             <trim prefixOverrides="and">
+                <if test="1==1">
+                    and `timestamp`>'20180301000000'
+                </if>
                 <if test="blockHeight !=null">
                     and block_height = #{blockHeight,jdbcType=BIGINT}
                 </if>
@@ -134,7 +170,7 @@
                 </if>
             </trim>
         </where>
-        ORDER BY `block_height` DESC,`tx_seq` DESC
+        ORDER BY `timestamp` DESC
         LIMIT ${offset},${limit}
     </select>
 
@@ -142,9 +178,9 @@
         SELECT
         <include refid="Base_Column_List"/>
         FROM `neb_transaction`
-        WHERE `to` = #{contract,jdbcType=VARCHAR}
+        WHERE `timestamp`>'20180301000000' and `to` = #{contract,jdbcType=VARCHAR}
         and type='call'
-        ORDER BY `block_height` DESC,`tx_seq` DESC
+        ORDER BY `timestamp` DESC
         LIMIT ${offset},${limit}
     </select>
 
@@ -152,25 +188,34 @@
         SELECT
         <include refid="Base_Column_List"/>
         FROM `neb_transaction`
-        WHERE `from` = #{addressHash,jdbcType=VARCHAR} or `to` = #{addressHash,jdbcType=VARCHAR}
-        ORDER BY `block_height` DESC,`tx_seq` DESC
+        WHERE `timestamp`>'20180301000000' and (`from` = #{addressHash,jdbcType=VARCHAR} or `to` = #{addressHash,jdbcType=VARCHAR})
+        ORDER BY `timestamp` DESC
         LIMIT ${offset},${limit}
+    </select>
+
+    <select id="find500TxListByAddress" parameterType="map" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from neb_transaction
+        where
+        (`from`=#{address,jdbcType=VARCHAR} or `to`=#{address,jdbcType=VARCHAR})
+        order by `timestamp` desc limit 500;
     </select>
 
     <select id="findTxnByFromToAndCall" parameterType="map" resultMap="BaseResultMap">
         SELECT
         <include refid="Base_Column_List"/>
         FROM `neb_transaction`
-        WHERE `from` = #{addressHash,jdbcType=VARCHAR} and `to` = #{contractAddress,jdbcType=VARCHAR} AND `type` = 'call'
-        ORDER BY `block_height` DESC,`tx_seq` DESC
+        WHERE `timestamp`>'20180301000000' and `from` = #{addressHash,jdbcType=VARCHAR} and `to` = #{contractAddress,jdbcType=VARCHAR} AND `type` = 'call'
+        ORDER BY `timestamp` DESC
     </select>
 
     <select id="findTxnByContract" parameterType="map" resultMap="BaseResultMap">
         SELECT
         <include refid="Base_Column_List"/>
         FROM `neb_transaction`
-        WHERE (`from` = #{contractAddress,jdbcType=VARCHAR} or `to` = #{contractAddress,jdbcType=VARCHAR}) AND `type` = 'call'
-        ORDER BY `block_height` DESC,`tx_seq` DESC
+        WHERE `timestamp`>'20180301000000' and (`from` = #{contractAddress,jdbcType=VARCHAR} or `to` = #{contractAddress,jdbcType=VARCHAR}) AND `type` = 'call'
+        ORDER BY `timestamp` DESC
     </select>
 
 
@@ -178,7 +223,7 @@
         SELECT
         <include refid="Base_Column_List"/>
         FROM `neb_transaction`
-        ORDER BY `block_height` DESC,`tx_seq` DESC
+        ORDER BY `timestamp` DESC
         LIMIT ${offset},${limit}
     </select>
 
@@ -222,14 +267,6 @@
         GROUP BY `to`
     </select>
 
-    <select id="countTxCntGroupByTimestamp" parameterType="map" resultType="java.util.Map">
-        SELECT
-          LEFT(`timestamp`,10) AS `ts`,
-          COUNT(1) AS `cnt`
-        FROM `neb_transaction`
-        WHERE `timestamp` BETWEEN #{from,jdbcType=TIMESTAMP} and #{to,jdbcType=TIMESTAMP}
-        GROUP BY LEFT(`timestamp`,10)
-    </select>
     <select id="countTotalTxnCnt" resultType="java.lang.Long">
         SELECT
           COUNT(1)

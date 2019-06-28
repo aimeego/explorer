@@ -171,3 +171,22 @@ CREATE TABLE `neb_contract_token_balance` (
   `updated_time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='neb contract token balance';
+
+CREATE TABLE `token_record` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+  `token_name` varchar(20) NOT NULL COMMENT 'hex string of the contract address',
+  `address` varchar(64) NOT NULL COMMENT 'address',
+  `block` bigint(16) NOT NULL,
+  `txHash` varchar(64) NOT NULL COMMENT 'hex string of tx hash',
+  `amount` varchar(64) NOT NULL DEFAULT '',
+  `source` bigint(16) NOT NULL,
+  `timestamp` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `createdAt` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `token_record_address_index` (`address`),
+  key `token_record_name_index` (`token_name`),
+  UNIQUE KEY `token_record_id_uindex` (`id`),
+  KEY `token_record_source_index` (`source`),
+  KEY `token_record_txHash_index` (`txHash`),
+  KEY `token_record_block_index` (`block`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='token record';

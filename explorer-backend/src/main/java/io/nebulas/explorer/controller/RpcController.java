@@ -14,6 +14,7 @@ import io.nebulas.explorer.model.vo.BlockVo;
 import io.nebulas.explorer.model.vo.ContractListItemVo;
 import io.nebulas.explorer.model.vo.Nrc20TransactionVo;
 import io.nebulas.explorer.model.vo.TransactionVo;
+import io.nebulas.explorer.model.vo.TokenInfoVo;
 import io.nebulas.explorer.service.blockchain.*;
 import io.nebulas.explorer.service.thirdpart.nebulas.NebApiServiceWrapper;
 import io.nebulas.explorer.service.thirdpart.nebulas.bean.GetAccountStateResponse;
@@ -87,6 +88,12 @@ public class RpcController {
     private final byte[] lockForTxCountByDay = new byte[0];
     private final byte[] lockForTxCountToday = new byte[0];
     private final byte[] lockForTxCountTotal = new byte[0];
+
+    @RequestMapping(value = "/all_tokens", method = RequestMethod.GET)
+    public JsonResult allTokens() {
+        List<NebContractToken> tokenList = contractTokenService.getAllContractTokens();
+        return JsonResult.success(convertToken2TokenVo(tokenList));
+    }
 
     @RequestMapping(value = "/market_cap", method = RequestMethod.GET)
     public JsonResult marketCap() {
@@ -815,6 +822,19 @@ public class RpcController {
             resultList.add(vo);
         }
         return resultList;
+    }
+
+    private List<TokenInfoVo> convertToken2TokenVo(List<NebContractToken> tokenList) {
+        if (CollectionUtils.isEmpty(tokenList)) {
+            return Collections.emptyList();
+        }
+
+        List<TokenInfoVo> tokenVoList = new LinkedList<>();
+        for (NebContractToken token : tokenList) {
+            TokenInfoVo vo = new TokenInfoVo().build(token);
+            tokenVoList.add(vo);
+        }
+        return tokenVoList;
     }
 
     private List<TransactionVo> convertTxn2TxnVoWithAddress(List<NebTransaction> txns) {

@@ -2,7 +2,11 @@
 
 module.exports = {
     language: 'EN',
-    nav:{
-        'home' : 'HOME',
+    nav: {
+        'home': 'HOME',
     },
+    dashboard: {
+        dailyTx: 'Daily Transactions',
+        today: 'Today'
+    }
 }

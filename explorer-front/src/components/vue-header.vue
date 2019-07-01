@@ -82,6 +82,21 @@
         .vue-header .dropdown-menu {
             margin-left: 30px;
         }
+
+        .vue-header .item-title-zh {
+            position: relative;
+            font-size: 22px;
+            font-weight: 500;
+            color: rgba(27, 4, 107, 0.8);
+            margin: 0px 60px 0px 0px;
+        }
+
+        .vue-header .item-title-en {
+            position: relative;
+            font-size: 22px;
+            font-weight: 500;
+            color: rgb(27, 4, 107, 0.8);
+        }
     }
 
     @media (max-width: 991.98px) {
@@ -91,11 +106,35 @@
             width: 100%;
             margin: 10px 0px;
         }
+
+        .vue-header .item-title-en {
+            font-size: 22px;
+            font-weight: 500;
+            color: rgba(27, 4, 107, 0.8);
+        }
+
+        .vue-header .item-title-zh {
+            font-size: 22px;
+            font-weight: 500;
+            color: rgba(27, 4, 107, 0.8);
+        }
     }
 
     @media (max-width: 767.98px) {
         input {
             font-size: 16px;
+        }
+
+        .vue-header .item-title-en {
+            font-size: 22px;
+            font-weight: 500;
+            color: rgba(27, 4, 107, 0.8);
+        }
+
+        .vue-header .item-title-zh {
+            font-size: 22px;
+            font-weight: 500;
+            color: rgba(27, 4, 107, 0.8);
         }
     }
 
@@ -105,9 +144,11 @@
         <div class=container>
             <div>
                 <router-link v-bind:to="fragApi + '/'" class=navbar-brand>
-                    <img src="/static/img/logo_beta.png?v=20190117" width=210 alt="">
+                    <img src="/static/img/logo_carbon.png" width=33 height=33 alt="">
                 </router-link>
             </div>
+            <div v-bind:class="{'item-title-zh': this.$i18n.locale === 'zh-CN', 'item-title-en': this.$i18n.locale != 'zh-CN'}" >{{ $t('nav.title') }}</div>
+            <!-- <div class="item-title" v-show="this.$i18n.locale === 'zh-CN'"></div> -->
 
             <button class=navbar-toggler type=button data-toggle=collapse data-target=#navbarSupportedContent aria-controls=navbarSupportedContent aria-expanded=false aria-label="Toggle navigation">
                 <span class=navbar-toggler-icon></span>

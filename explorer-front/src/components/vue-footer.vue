@@ -77,31 +77,26 @@
         height: env(safe-area-inset-bottom);
     }
 
+    .vue-footer .item-footer {
+        font-size: 16px;
+        font-weight: 500;
+        color: rgba(27, 4, 107, 0.8);
+    }
+
 </style>
 <template>
     <div class=vue-footer>
         <div class=container>
             <div class="row">
                 <div class="col-xs-12 col-md-4">
-                    <a target=_blank href=https://nebulas.io>
-                        <img style="height: 34px; width: 156px;display: inline; vertical-align: middle;" src="../../static/img/img_footer_logo.png"/>
+                    <a target=_blank href=#>
+                        <img style="height: 45px; width: 45px;display: inline; vertical-align: middle; horizontal-align: middle;" src="../../static/img/logo_carbon.png"/>
                     </a>
+                    <div class="item-footer">{{ $t('nav.title') }}</div>
                 </div>
 
                 <div class="col-xs-12 col-md-4">
-                    <div>Copyright © 2017-2018 Nebulas.io</div>
-                </div>
-
-                <div class="col-xs-12 col-md-4">
-                    <div>
-                        <a target=_blank href=https://twitter.com/nebulasio>
-                            <div class="icon24 twitter" src="../../static/img/ic_twitter.png"></div>
-                        </a>
-                        <a target=_blank href=https://github.com/nebulasio/explorer/issues>
-                            <div class="icon24 github" src="../../static/img/ic_github.png"></div>
-                            Submit an issue
-                        </a>
-                    </div>
+                    <div>Copyright © 2019-2020 Carbon Eco</div>
                 </div>
             </div>
             <div class="safe-bottom"></div>

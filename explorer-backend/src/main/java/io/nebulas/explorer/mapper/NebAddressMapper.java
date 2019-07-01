@@ -8,6 +8,7 @@ import org.apache.ibatis.annotations.Param;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Date;
 
 /**
  * the mapper of table neb_address
@@ -50,4 +51,6 @@ public interface NebAddressMapper {
     List<NebAddress> getAddressListByType(@Param("type") int type, @Param("offset") int offset, @Param("limit") int limit);
 
     long getAddressCountByType(@Param("type") int type);
+
+    long getAddressCountUntilDay(@Param("day") Date type);
 }

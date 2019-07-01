@@ -98,5 +98,11 @@
         WHERE `type`=${type}
     </select>
 
+    <select id="getAddressCountUntilDay" resultType="java.lang.Long" parameterType="java.util.Date">
+        select
+        count(*)
+        from `neb_address`
+        where `created_at` = #{day,jdbcType=DATE}
+    </select>
 
 </mapper>

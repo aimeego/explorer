@@ -18,6 +18,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import java.util.Date;
 
 /**
  * nebulas address related operation service
@@ -47,6 +48,10 @@ public class NebAddressService {
 //    public boolean addNebAddress(String hash, int type) {
 //        return nebAddressMapper.add(hash, type) > 0;
 //    }
+
+    public long getAddressCountUntilDay(Date day){
+        return nebAddressMapper.getAddressCountUntilDay(day);
+    }
 
     public List<NebAddress> getContractList(int pageNum, int pageSize) {
         return nebAddressMapper.getAddressListByType(ADDRESS_TYPE_CONTRACT, (pageNum - 1) * pageSize, pageSize);

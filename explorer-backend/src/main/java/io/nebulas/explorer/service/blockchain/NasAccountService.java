@@ -3,6 +3,7 @@ package io.nebulas.explorer.service.blockchain;
 import io.nebulas.explorer.domain.NasAccount;
 import io.nebulas.explorer.domain.NasAccountCondition;
 import io.nebulas.explorer.mapper.NasAccountMapper;
+import io.nebulas.explorer.mapper.NebAddressMapper;
 import lombok.AllArgsConstructor;
 import org.joda.time.DateTime;
 import org.joda.time.DateTimeZone;
@@ -12,12 +13,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.TimeZone;
+import java.util.Date;
 
 @Service
 @AllArgsConstructor
 public class NasAccountService {
 
     private final NasAccountMapper nasAccountMapper;
+    private final NebAddressMapper nebAddressMapper;
 
     public NasAccount getLatestNasAccount() {
         NasAccount nasAccount = nasAccountMapper.selectByLatest();
@@ -26,7 +29,6 @@ public class NasAccountService {
         }
         return nasAccount;
     }
-
 
     public NasAccount getNasAccountFromNinetyDays() {
         //找90天前的account记录
@@ -38,8 +40,9 @@ public class NasAccountService {
 
         List<NasAccount> nasAccount = nasAccountMapper.selectByCondition(cond);
         if (nasAccount.size() == 0) {
+            //如果没有数据再统计一遍
             NasAccount tmp = new NasAccount();
-            tmp.setAddressCount(0);
+            tmp.setAddressCount((int)getAddressCountUntilDay(ninetyDay.withTimeAtStartOfDay().toDate()));
             return tmp;
         }
         return nasAccount.get(0);
@@ -68,5 +71,17 @@ public class NasAccountService {
         return result;
     }
 
-
+    public long getAddressCountUntilDay(Date day){
+        long addrCnt = nebAddressMapper.getAddressCountUntilDay(day);
+        NasAccount record = new NasAccount();
+        record.setTimestamp(day);
+        record.setCreatedAt(day);
+        record.setUpdatedAt(day);
+        record.setAddressCount((int)addrCnt);
+	record.setAddressIncrement(0);
+        record.setContractCount(0);
+        record.setContractIncrement(0);
+        nasAccountMapper.insert(record);
+        return addrCnt;
+    }
 }

@@ -102,7 +102,7 @@
         select
         count(*)
         from `neb_address`
-        where `created_at` = #{day,jdbcType=DATE}
+        where `created_at` &lt;=  #{day,jdbcType=DATE}
     </select>
 
 </mapper>

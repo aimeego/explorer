@@ -85,16 +85,16 @@ spring:
     platform: mysql
     initialize: false
     schema: classpath:schema.sql
-    url: jdbc:mysql://127.0.0.1:3306/explorertest?autoCommit=true&autoReconnect=true&useUnicode=true&tinyInt1isBit=false&zeroDateTimeBehavior=round&characterEncoding=UTF-8&yearIsDateType=false&useSSL=false
+    url: jdbc:mysql://172.26.142.98:3306/explorer?autoCommit=true&autoReconnect=true&useUnicode=true&tinyInt1isBit=false&zeroDateTimeBehavior=round&characterEncoding=UTF-8&yearIsDateType=false&useSSL=false
     username: explorer
-    password: 123456
+    password: kKIo0##D
     separator: ;
-    name: explorertest
+    name: explorer
     continue-on-error: false
     jmx-enabled: true
     type: com.zaxxer.hikari.HikariDataSource
     hikari:
-      pool-name: explorertest
+      pool-name: explorer
       maximum-pool-size: 30
       allow-pool-suspension: true
       login-timeout: 100
@@ -110,8 +110,8 @@ server:
   port: 32736
 environment: test
 page:
-  baseUrl: http://120.92.74.201
-  hostUrl: http://120.92.74.201
+  baseUrl: http://39.98.232.55
+  hostUrl: http://39.98.232.55
 pendingTxExpiredTime : 1
 redis:
   host: 127.0.0.1

@@ -19,6 +19,8 @@ CREATE TABLE `neb_address` (
   `type` tinyint(2) NOT NULL DEFAULT '0' COMMENT 'address type, 0: Normal; 1: Contract',
   `alias` varchar(256) NOT NULL DEFAULT '' COMMENT 'address alias',
   `current_balance` decimal(50,0) NOT NULL COMMENT 'address current balance',
+  `creator` varchar(40) NOT NULL DEFAULT '' COMMENT 'hex string of address hash',
+  `deploy_tx_hash` varchar(40) NOT NULL DEFAULT '' COMMENT 'hex string of address hash',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),

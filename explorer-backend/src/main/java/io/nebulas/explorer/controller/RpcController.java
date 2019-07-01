@@ -966,12 +966,6 @@ public class RpcController {
     public JsonResult getNasMainnetInfo() {
 	JsonResult result = JsonResult.success();
 
-        NasAccount nasAccount = nasAccountService.getLatestNasAccount();
-
-        if (nasAccount == null) {
-            return JsonResult.success();
-        }
-
         //从redis中拿，减少查询频率
         String key = "txnCnt";
         Long totalTxnCnt = 0L;

@@ -58,7 +58,13 @@ public class NasAccountService {
         cond.createCriteria().andTimestampBetween(startDay.toDate(), endDay.toDate());
         List<NasAccount> nasAccountList = nasAccountMapper.selectByCondition(cond);
         if (nasAccountList.size() == 0) {
-            return Collections.emptyList();
+            for(int i = 1; i< 57; i++)
+            {
+                NasAccount accRecord = new NasAccount();
+                DateTime targetDate = today.minusDays(i);
+                accRecord.setAddressCount((int)getAddressCountUntilDay(targetDate.toDate()));
+                nasAccountList.add(accRecord);
+            }
         }
 
         //每隔8天把数据取出来
@@ -78,7 +84,7 @@ public class NasAccountService {
         record.setCreatedAt(day);
         record.setUpdatedAt(day);
         record.setAddressCount((int)addrCnt);
-	record.setAddressIncrement(0);
+	    record.setAddressIncrement(0);
         record.setContractCount(0);
         record.setContractIncrement(0);
         nasAccountMapper.insert(record);
